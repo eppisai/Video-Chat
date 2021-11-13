@@ -4,10 +4,10 @@ import { io } from "socket.io-client";
 import Peer from "simple-peer";
 import { message } from "antd";
 
-const URL = "https://fathomless-tundra-67025.herokuapp.com/";
-// const SERVER_URL = "http://localhost:5000/";
+// const URL = "https://fathomless-tundra-67025.herokuapp.com/";
+const SERVER_URL = "http://localhost:5000/";
 
-export const socket = io(URL);
+export const socket = io(SERVER_URL);
 
 const VideoState = ({ children }) => {
   const [callAccepted, setCallAccepted] = useState(false);
@@ -31,13 +31,22 @@ const VideoState = ({ children }) => {
   const connectionRef = useRef();
   const screenTrackRef = useRef();
 
+
+  // get user's video media and assign to 'Stream' , see if we had emitted name and endcall
+  // check if mic or video is on or off emitted in socket 
+  // check on socket if there is a call coming
+  // check on socket if message is coming
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((currentStream) => {
         setStream(currentStream);
+
+        //why this line? for adding in video in src tab?
         myVideo.current.srcObject = currentStream;
+
       });
+
     if (localStorage.getItem("name")) {
       setName(localStorage.getItem("name"));
     }
@@ -79,6 +88,7 @@ const VideoState = ({ children }) => {
   //   console.log(chat);
   // }, [chat]);
 
+  // Finds when the peer wants to send signaling data to the remote peer, then emits that call has been answered using socket, with media status and username
   const answerCall = () => {
     setCallAccepted(true);
     setOtherUser(call.from);
@@ -103,7 +113,8 @@ const VideoState = ({ children }) => {
     connectionRef.current = peer;
     console.log(connectionRef.current);
   };
-
+  
+  // Get the ID of user whom we should call, then send the signal data, and emit the same using socket that calling the user
   const callUser = (id) => {
     const peer = new Peer({ initiator: true, trickle: false, stream });
     setOtherUser(id);
@@ -134,6 +145,7 @@ const VideoState = ({ children }) => {
     console.log(connectionRef.current);
   };
 
+  // update, if user updates or turns off the camera 
   const updateVideo = () => {
     setMyVdoStatus((currentStatus) => {
       socket.emit("updateMyMedia", {
@@ -145,6 +157,7 @@ const VideoState = ({ children }) => {
     });
   };
 
+  // update, if user updates or turns off  microphone
   const updateMic = () => {
     setMyMicStatus((currentStatus) => {
       socket.emit("updateMyMedia", {
